@@ -16,8 +16,17 @@ def get_embedding(text: str) -> np.ndarray:
     return embedding
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
-print(df)
 
 ###########################################################################################
 #start tulis code dekat sini
 #buat model
+
+df['subscription_type'] = df['subscription_type'].map({
+    'Basic': 1,
+    'Standard':2,
+    'Premium':3
+})
+
+df.drop(columns = ["customer_feedback","customer_id"])
+
+print(df)
