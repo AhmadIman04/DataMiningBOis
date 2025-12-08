@@ -17,3 +17,7 @@ def get_embedding(text: str) -> np.ndarray:
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 print(df)
+
+###########################################################################################
+#start tulis code dekat sini
+#buat model
