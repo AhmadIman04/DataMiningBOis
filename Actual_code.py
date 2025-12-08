@@ -23,3 +23,4 @@ print(df)
 #buat model
 
 print("woi")
+print("woi2")
