@@ -22,5 +22,3 @@ print(df)
 #start tulis code dekat sini
 #buat model
 
-print("woi")
-print("woi2")
