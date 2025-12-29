@@ -5,6 +5,9 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -26,42 +29,50 @@ df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
 #--------------------------------Neural Network ----------------------------------
 
-# Create a copy of df for neural network training (to keep XGBoost code intact)
+# Create a copy of df for neural network training
 df_nn = df.copy()
 
-# Expand customer_feedback embeddings into separate columns (embed_0, embed_1, ..., embed_383)
 embedding_df = pd.DataFrame(df_nn['customer_feedback(vector)'].tolist(), index=df_nn.index)
 embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
 
-# Drop original customer_feedback and customer_id columns from df_nn
 df_nn.drop(columns=['customer_feedback', 'customer_id', 'customer_feedback(vector)'], inplace=True)
 
-# Concatenate embedding columns back into df_nn
 df_nn = pd.concat([df_nn, embedding_df], axis=1)
 
-# ----------------------------- Feature Engineering (df_nn) -----------------------------
-# One-hot encode categorical variables on df_nn (drops original columns)
+# Feature Engineering (df_nn) 
 df_nn = pd.get_dummies(df_nn, columns=['gender', 'subscription_type'], drop_first=True)
 
-# Initialize scaler and scale numerical columns (including embeddings)
 scaler = StandardScaler()
 
-# Identify numerical columns (exclude target 'churn')
 num_cols = df_nn.select_dtypes(include=[np.number]).columns.tolist()
 if 'churn' in num_cols:
     num_cols.remove('churn')
 
-# Fit-transform numeric columns
 df_nn[num_cols] = scaler.fit_transform(df_nn[num_cols])
 
-# Split into features and target for neural network
 X_nn = df_nn.drop(columns=['churn'])
 y_nn = df_nn['churn']
 
-# Train/test split for NN pipeline (80% train, 20% test)
 X_train_nn, X_test_nn, y_train_nn, y_test_nn = train_test_split(X_nn, y_nn, test_size=0.2, random_state=42)
 
-# --------------------------- End Feature Engineering (df_nn) ---------------------------
+#Neural Network Builder
+def build_neural_network(input_shape):
+    """Builds and compiles a simple feed-forward neural network.
+
+    Args:
+        input_shape (tuple): Shape of the input features (e.g., (n_features,)).
+
+    Returns:
+        tf.keras.Model: A compiled Keras Sequential model.
+    """
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_shape=input_shape))
+    model.add(Dropout(0.3))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='adam', loss='binary_crossentropy')
+    return model
+
 
 
 #--------------------------------XGBoost ----------------------------------
