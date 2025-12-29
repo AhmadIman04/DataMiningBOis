@@ -24,6 +24,23 @@ def get_embedding(text: str) -> np.ndarray:
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
 ###########################################################################################
+# NEURAL NETWORK PIPELINE - Data Preparation
+###########################################################################################
+
+# Create a copy of df for neural network training (to keep XGBoost code intact)
+df_nn = df.copy()
+
+# Expand customer_feedback embeddings into separate columns (embed_0, embed_1, ..., embed_383)
+embedding_df = pd.DataFrame(df_nn['customer_feedback(vector)'].tolist(), index=df_nn.index)
+embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
+
+# Drop original customer_feedback and customer_id columns from df_nn
+df_nn.drop(columns=['customer_feedback', 'customer_id', 'customer_feedback(vector)'], inplace=True)
+
+# Concatenate embedding columns back into df_nn
+df_nn = pd.concat([df_nn, embedding_df], axis=1)
+
+###########################################################################################
 #start tulis code dekat sini
 #buat model
 
