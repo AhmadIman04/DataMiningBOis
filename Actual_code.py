@@ -4,6 +4,7 @@ import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_squared_error
+from sklearn.preprocessing import StandardScaler
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -23,9 +24,7 @@ def get_embedding(text: str) -> np.ndarray:
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
-###########################################################################################
-# NEURAL NETWORK PIPELINE - Data Preparation
-###########################################################################################
+#--------------------------------Neural Network ----------------------------------
 
 # Create a copy of df for neural network training (to keep XGBoost code intact)
 df_nn = df.copy()
@@ -40,9 +39,29 @@ df_nn.drop(columns=['customer_feedback', 'customer_id', 'customer_feedback(vecto
 # Concatenate embedding columns back into df_nn
 df_nn = pd.concat([df_nn, embedding_df], axis=1)
 
-###########################################################################################
-#start tulis code dekat sini
-#buat model
+# ----------------------------- Feature Engineering (df_nn) -----------------------------
+# One-hot encode categorical variables on df_nn (drops original columns)
+df_nn = pd.get_dummies(df_nn, columns=['gender', 'subscription_type'], drop_first=True)
+
+# Initialize scaler and scale numerical columns (including embeddings)
+scaler = StandardScaler()
+
+# Identify numerical columns (exclude target 'churn')
+num_cols = df_nn.select_dtypes(include=[np.number]).columns.tolist()
+if 'churn' in num_cols:
+    num_cols.remove('churn')
+
+# Fit-transform numeric columns
+df_nn[num_cols] = scaler.fit_transform(df_nn[num_cols])
+
+# Split into features and target for neural network
+X_nn = df_nn.drop(columns=['churn'])
+y_nn = df_nn['churn']
+
+# Train/test split for NN pipeline (80% train, 20% test)
+X_train_nn, X_test_nn, y_train_nn, y_test_nn = train_test_split(X_nn, y_nn, test_size=0.2, random_state=42)
+
+# --------------------------- End Feature Engineering (df_nn) ---------------------------
 
 
 #--------------------------------XGBoost ----------------------------------
