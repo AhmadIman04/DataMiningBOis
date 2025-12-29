@@ -73,6 +73,18 @@ def build_neural_network(input_shape):
     model.compile(optimizer='adam', loss='binary_crossentropy')
     return model
 
+#Train Neural Network
+input_dim = X_train_nn.shape[1]
+model_nn = build_neural_network((input_dim,))
+
+# Fit the model
+history_nn = model_nn.fit(
+    X_train_nn,
+    y_train_nn,
+    epochs=20,
+    batch_size=32,
+    validation_data=(X_test_nn, y_test_nn)
+)
 
 
 #--------------------------------XGBoost ----------------------------------
