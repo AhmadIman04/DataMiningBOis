@@ -87,6 +87,24 @@ history_nn = model_nn.fit(
 )
 
 
+# Evaluation
+
+y_prob_nn = model_nn.predict(X_test_nn).ravel()
+y_pred_nn = (y_prob_nn > 0.5).astype(int)
+
+# Metrics
+acc_nn = accuracy_score(y_test_nn, y_pred_nn)
+f1_nn = f1_score(y_test_nn, y_pred_nn)
+roc_auc_nn = roc_auc_score(y_test_nn, y_prob_nn)
+rmse_nn = np.sqrt(mean_squared_error(y_test_nn, y_prob_nn))
+
+print("\nNeural Network Metrics:")
+print(f"Accuracy: {acc_nn:.4f}")
+print(f"F1-Score: {f1_nn:.4f}")
+print(f"ROC-AUC: {roc_auc_nn:.4f}")
+print(f"RMSE (probabilities): {rmse_nn:.4f}")
+
+
 #--------------------------------XGBoost ----------------------------------
 
 df['subscription_type'] = df['subscription_type'].map({
