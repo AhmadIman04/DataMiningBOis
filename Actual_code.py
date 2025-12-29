@@ -105,6 +105,26 @@ print(f"ROC-AUC: {roc_auc_nn:.4f}")
 print(f"RMSE (probabilities): {rmse_nn:.4f}")
 
 
+# Prepare AI analysis prompt for Neural Network
+accuracy_nn = acc_nn
+analysis_prompt_nn = f"""
+You are a Senior Data Scientist.
+
+Model: Feed-forward Neural Network for customer churn prediction.
+
+Metrics:
+- Accuracy: {accuracy_nn:.4f}
+- F1-Score: {f1_nn:.4f}
+- ROC-AUC: {roc_auc_nn:.4f}
+- RMSE (probabilities): {rmse_nn:.4f}
+
+Questions:
+1) Evaluate: Is this Neural Network performing well for a churn prediction task?
+2) Compare: How would this likely compare to simple linear models (e.g., logistic regression)?
+3) Insights: Given this model combines numerical features and `embed_` text-derived features, what business advantages does this more complex modeling approach provide?
+"""
+
+
 #--------------------------------XGBoost ----------------------------------
 
 df['subscription_type'] = df['subscription_type'].map({
@@ -203,4 +223,12 @@ try:
 except Exception as e:
     print(f"Error calling Gemini: {e}")
 
-#----------------------------------------------------------------------------------------
+
+try:
+    insights_nn = gemini_reply(analysis_prompt_nn)
+    print("\n" + "="*50)
+    print("=== NEURAL NETWORK AI INSIGHTS ===")
+    print("="*50)
+    print(insights_nn)
+except Exception as e:
+    print(f"Error calling Gemini for NN: {e}")
