@@ -4,6 +4,10 @@ import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_squared_error
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -23,9 +27,102 @@ def get_embedding(text: str) -> np.ndarray:
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
-###########################################################################################
-#start tulis code dekat sini
-#buat model
+#--------------------------------Neural Network ----------------------------------
+
+# Create a copy of df for neural network training
+df_nn = df.copy()
+
+embedding_df = pd.DataFrame(df_nn['customer_feedback(vector)'].tolist(), index=df_nn.index)
+embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
+
+df_nn.drop(columns=['customer_feedback', 'customer_id', 'customer_feedback(vector)'], inplace=True)
+
+df_nn = pd.concat([df_nn, embedding_df], axis=1)
+
+# Feature Engineering (df_nn) 
+df_nn = pd.get_dummies(df_nn, columns=['gender', 'subscription_type'], drop_first=True)
+
+scaler = StandardScaler()
+
+num_cols = df_nn.select_dtypes(include=[np.number]).columns.tolist()
+if 'churn' in num_cols:
+    num_cols.remove('churn')
+
+df_nn[num_cols] = scaler.fit_transform(df_nn[num_cols])
+
+X_nn = df_nn.drop(columns=['churn'])
+y_nn = df_nn['churn']
+
+X_train_nn, X_test_nn, y_train_nn, y_test_nn = train_test_split(X_nn, y_nn, test_size=0.2, random_state=42)
+
+#Neural Network Builder
+def build_neural_network(input_shape):
+    """Builds and compiles a simple feed-forward neural network.
+
+    Args:
+        input_shape (tuple): Shape of the input features (e.g., (n_features,)).
+
+    Returns:
+        tf.keras.Model: A compiled Keras Sequential model.
+    """
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_shape=input_shape))
+    model.add(Dropout(0.3))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='adam', loss='binary_crossentropy')
+    return model
+
+#Train Neural Network
+input_dim = X_train_nn.shape[1]
+model_nn = build_neural_network((input_dim,))
+
+# Fit the model
+history_nn = model_nn.fit(
+    X_train_nn,
+    y_train_nn,
+    epochs=20,
+    batch_size=32,
+    validation_data=(X_test_nn, y_test_nn)
+)
+
+
+# Evaluation
+
+y_prob_nn = model_nn.predict(X_test_nn).ravel()
+y_pred_nn = (y_prob_nn > 0.5).astype(int)
+
+# Metrics
+acc_nn = accuracy_score(y_test_nn, y_pred_nn)
+f1_nn = f1_score(y_test_nn, y_pred_nn)
+roc_auc_nn = roc_auc_score(y_test_nn, y_prob_nn)
+rmse_nn = np.sqrt(mean_squared_error(y_test_nn, y_prob_nn))
+
+print("\nNeural Network Metrics:")
+print(f"Accuracy: {acc_nn:.4f}")
+print(f"F1-Score: {f1_nn:.4f}")
+print(f"ROC-AUC: {roc_auc_nn:.4f}")
+print(f"RMSE (probabilities): {rmse_nn:.4f}")
+
+
+# Prepare AI analysis prompt for Neural Network
+accuracy_nn = acc_nn
+analysis_prompt_nn = f"""
+You are a Senior Data Scientist.
+
+Model: Feed-forward Neural Network for customer churn prediction.
+
+Metrics:
+- Accuracy: {accuracy_nn:.4f}
+- F1-Score: {f1_nn:.4f}
+- ROC-AUC: {roc_auc_nn:.4f}
+- RMSE (probabilities): {rmse_nn:.4f}
+
+Questions:
+1) Evaluate: Is this Neural Network performing well for a churn prediction task?
+2) Compare: How would this likely compare to simple linear models (e.g., logistic regression)?
+3) Insights: Given this model combines numerical features and `embed_` text-derived features, what business advantages does this more complex modeling approach provide?
+"""
 
 
 #--------------------------------XGBoost ----------------------------------
@@ -126,4 +223,12 @@ try:
 except Exception as e:
     print(f"Error calling Gemini: {e}")
 
-#----------------------------------------------------------------------------------------
+
+try:
+    insights_nn = gemini_reply(analysis_prompt_nn)
+    print("\n" + "="*50)
+    print("=== NEURAL NETWORK AI INSIGHTS ===")
+    print("="*50)
+    print(insights_nn)
+except Exception as e:
+    print(f"Error calling Gemini for NN: {e}")
