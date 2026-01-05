@@ -250,9 +250,6 @@ embeddings_df = pd.DataFrame(
     columns=[f"emb_{i}" for i in range(embedding_dim)]
 )
 
-# Drop original text + embedding column
-df = df.drop(columns=["customer_feedback", "customer_feedback(vector)"])
-
 # Combine embeddings back
 df = pd.concat([df, embeddings_df], axis=1)
 

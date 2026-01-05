@@ -1,3 +1,7 @@
 pandas
 numpy
 sentence-transformers
+xgboost
+scikit-learn
+google-generativeai
+python-dotenv
