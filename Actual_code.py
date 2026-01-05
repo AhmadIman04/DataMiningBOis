@@ -1,6 +1,16 @@
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import xgboost as xgb
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_squared_error
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
 
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
@@ -16,7 +26,6 @@ def get_embedding(text: str) -> np.ndarray:
     return embedding
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
-print(df)
 
 #-------------------------Logistic Regression--------------------------------
 
