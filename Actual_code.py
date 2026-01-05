@@ -5,8 +5,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 import google.generativeai as genai
+import os
+from dotenv import load_dotenv
 
-GOOGLE_API_KEY = "AIzaSyBUgU-tOXikctC09kdmU9UWSd60VnyyU-M" 
+# Load .env.local
+load_dotenv(".env.local")
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
