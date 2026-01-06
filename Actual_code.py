@@ -32,7 +32,6 @@ print(df)
 
 ###########################################################################################
 #RANDOM FOREST MODEL
-#buat model
 # --- 5. CATEGORICAL MAPPING ---
 # Mapping subscription to ordinal values and gender to binary
 df['subscription_type'] = df['subscription_type'].map({'Basic': 1, 'Standard': 2, 'Premium': 3})
