@@ -65,3 +65,41 @@ model_rf = RandomForestClassifier(
 
 model_rf.fit(X_train, y_train)
 print("Random Forest model training complete.")
+
+# --- 8. EVALUATION & AI INSIGHTS ---
+# Predictions
+y_pred = model_rf.predict(X_test)
+y_prob = model_rf.predict_proba(X_test)[:, 1]
+
+# Metrics
+accuracy = accuracy_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_prob)
+
+# Feature Importance
+importances = model_rf.feature_importances_
+feature_importance_df = pd.DataFrame({'feature': X.columns, 'score': importances}).sort_values(by="score", ascending=False)
+top_features = feature_importance_df.head(10).to_string(index=False)
+
+print(f"\n📊 METRICS:\nAccuracy: {accuracy:.4f}\nF1: {f1:.4f}\nROC-AUC: {roc_auc:.4f}")
+
+# Gemini Integration
+def gemini_reply(prompt):
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    model_ai = genai.GenerativeModel("gemini-1.5-flash")
+    return model_ai.generate_content(prompt).text
+
+analysis_prompt = f"""
+Senior Data Scientist Report:
+Random Forest Churn Model Results:
+- Accuracy: {accuracy:.4f}, F1: {f1:.4f}, AUC: {roc_auc:.4f}
+- Top Drivers of Churn:
+{top_features}
+
+Explain if the sentiment (embeddings) mattered more than spending, and give 3 business actions.
+"""
+
+try:
+    print("\n🤖 GEMINI ANALYSIS:\n" + gemini_reply(analysis_prompt))
+except Exception as e:
+    print(f"AI Error: {e}")
