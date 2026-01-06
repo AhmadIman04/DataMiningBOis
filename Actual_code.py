@@ -1,6 +1,17 @@
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_squared_error
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Initialize basic settings
+load_dotenv()
+
+print("✅ Environment and Libraries ready.")
 
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
