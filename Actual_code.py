@@ -15,16 +15,17 @@ print("✅ Environment and Libraries ready.")
 
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
-# Load model once (fast)
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# Load the model once(fast)
+model_slm = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 def get_embedding(text: str) -> np.ndarray:
     """
-    Returns a vector embedding for the input string
-    using all-MiniLM-L6-v2.
+    Returns a vector embedding for the input string using all-MiniLM-L6-v2.
     """
-    embedding = model.encode(text, convert_to_numpy=True)
-    return embedding
+    return model_slm.encode(text, convert_to_numpy=True)
+
+print("✅ Embedding function and SLM model initialized.")
+
 
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 print(df)
