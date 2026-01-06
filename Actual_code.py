@@ -82,11 +82,15 @@ top_features = feature_importance_df.head(10).to_string(index=False)
 
 print(f"\n📊 METRICS:\nAccuracy: {accuracy:.4f}\nF1: {f1:.4f}\nROC-AUC: {roc_auc:.4f}")
 
-# Gemini Integration
 def gemini_reply(prompt):
+    # Configure using the environment variable
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model_ai = genai.GenerativeModel("gemini-1.5-flash")
-    return model_ai.generate_content(prompt).text
+    
+    # Use 'gemini-1.5-flash-latest' to avoid the 404 error
+    model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+    
+    response = model_ai.generate_content(prompt)
+    return response.text
 
 analysis_prompt = f"""
 Senior Data Scientist Report:
@@ -99,6 +103,11 @@ Explain if the sentiment (embeddings) mattered more than spending, and give 3 bu
 """
 
 try:
-    print("\n🤖 GEMINI ANALYSIS:\n" + gemini_reply(analysis_prompt))
+    print("\n🤖 GEMINI ANALYSIS:")
+    print("="*30)
+    print(gemini_reply(analysis_prompt))
+    print("="*30)
 except Exception as e:
+    # If it still fails, it might be an API versioning issue
     print(f"AI Error: {e}")
+    print("Tip: Check if your API Key is valid and billing/quota is active.")
