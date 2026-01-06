@@ -40,4 +40,17 @@ df['gender'] = df['gender'].map({'M': 1, 'F': 0})
 
 # Drop raw text and ID (we have vectors and ID isn't a feature)
 df.drop(columns=["customer_feedback", "customer_id"], inplace=True)
-print("✅ Step 5: Categorical data mapped and IDs dropped.")
+print(" Categorical data mapped and IDs dropped.")
+
+# --- 6. FEATURE FUSION & SPLIT ---
+# Convert the list of vectors into a separate DataFrame
+embedding_df = pd.DataFrame(df['customer_feedback(vector)'].tolist(), index=df.index)
+embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
+
+# Concatenate tabular features with the new embedding features
+X = pd.concat([df.drop(columns=['churn', 'customer_feedback(vector)']), embedding_df], axis=1)
+y = df['churn']
+
+# Split data (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+print(" Features fused and data split for training.")
