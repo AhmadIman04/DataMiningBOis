@@ -18,7 +18,7 @@ import google.generativeai as genai
 import os
 
 # Load .env.local
-load_dotenv(".env.local")
+load_dotenv(".env")
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
