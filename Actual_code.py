@@ -18,9 +18,11 @@ import google.generativeai as genai
 import os
 
 # Load .env.local
-load_dotenv(".env")
+
+load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
 
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
@@ -380,7 +382,7 @@ response = llm.generate_content(prompt)
 
 print(response.text)
 
-#DECISION TREE MODEL FOR CUSTOMER CHURN PREDICTION
+#-------------------------Decision Tree Model-------------------------------------
 print("\n" + "="*50)
 print("Start of the decision tree model code")
 print("\n" + "="*50)
