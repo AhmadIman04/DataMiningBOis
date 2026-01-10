@@ -17,17 +17,21 @@ from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 import google.generativeai as genai
 import os
 
-# Load .env.local
 
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
 # Load model once (fast)
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+def gemini_reply(prompt):
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    response = model.generate_content(prompt)
+    return response.text
 
 def get_embedding(text: str) -> np.ndarray:
     """
@@ -40,6 +44,10 @@ def get_embedding(text: str) -> np.ndarray:
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
 #--------------------------------Neural Network ----------------------------------
+
+print("======================================================================")
+print("                          Neural Network                              ")
+print("======================================================================")
 
 # Create a copy of df for neural network training
 df_nn = df.copy()
@@ -136,8 +144,21 @@ Questions:
 3) Insights: Given this model combines numerical features and `embed_` text-derived features, what business advantages does this more complex modeling approach provide?
 """
 
+try:
+    insights_nn = gemini_reply(analysis_prompt_nn)
+    print("\n" + "="*50)
+    print("=== NEURAL NETWORK AI INSIGHTS ===")
+    print("="*50)
+    print(insights_nn)
+except Exception as e:
+    print(f"Error calling Gemini for NN: {e}")
+
 
 #--------------------------------XGBoost ----------------------------------
+
+print("======================================================================")
+print("                          XGBoost                                     ")
+print("======================================================================")
 
 df['subscription_type'] = df['subscription_type'].map({
     'Basic': 1,
@@ -152,14 +173,6 @@ df['gender'] = df['gender'].map({
     'F':0,
 })
 
-
-load_dotenv() 
-
-def gemini_reply(prompt):
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content(prompt)
-    return response.text
 
 embedding_df = pd.DataFrame(df['customer_feedback(vector)'].tolist(), index=df.index)
 embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
@@ -236,16 +249,12 @@ except Exception as e:
     print(f"Error calling Gemini: {e}")
 
 
-try:
-    insights_nn = gemini_reply(analysis_prompt_nn)
-    print("\n" + "="*50)
-    print("=== NEURAL NETWORK AI INSIGHTS ===")
-    print("="*50)
-    print(insights_nn)
-except Exception as e:
-    print(f"Error calling Gemini for NN: {e}")
 
 #-------------------------Logistic Regression--------------------------------
+
+print("======================================================================")
+print("                          Logistic Regression                         ")
+print("======================================================================")
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
@@ -383,6 +392,12 @@ response = llm.generate_content(prompt)
 print(response.text)
 
 #-------------------------Decision Tree Model-------------------------------------
+
+print("======================================================================")
+print("                          Decision Tree                               ")
+print("======================================================================")
+
+
 print("\n" + "="*50)
 print("Start of the decision tree model code")
 print("\n" + "="*50)
@@ -490,3 +505,110 @@ def get_gemini_analysis(api_key, accuracy, roc, top_feats):
 
 # Run the Gemini Analysis
 get_gemini_analysis(GOOGLE_API_KEY, acc, roc_auc, top_features_str)
+
+#--------------------------------Random Forest ----------------------------------
+
+print("======================================================================")
+print("                          Random Forest                               ")
+print("======================================================================")
+
+
+# 1. IMPORT NECESSARY LIBRARIES FOR THIS SECTION
+from sklearn.ensemble import RandomForestClassifier
+
+# 2. RELOAD DATA 
+df_rf = pd.read_csv("clean_customer_churn_dataset.csv")
+
+# 3. VECTORIZATION
+print("Generating Embeddings for Random Forest...")
+df_rf["customer_feedback(vector)"] = df_rf["customer_feedback"].apply(get_embedding)
+
+# 4. PREPROCESSING
+df_rf['subscription_type'] = df_rf['subscription_type'].map({'Basic': 1, 'Standard': 2, 'Premium': 3})
+df_rf['gender'] = df_rf['gender'].map({'M': 1, 'F': 0})
+
+# Drop columns not needed for training
+df_rf.drop(columns=["customer_feedback", "customer_id"], inplace=True)
+
+# Expand embeddings into separate columns
+embedding_df_rf = pd.DataFrame(df_rf['customer_feedback(vector)'].tolist(), index=df_rf.index)
+embedding_df_rf.columns = [f'embed_{i}' for i in range(embedding_df_rf.shape[1])]
+
+# Concatenate tabular features with the new embedding features
+X_rf = pd.concat([df_rf.drop(columns=['churn', 'customer_feedback(vector)']), embedding_df_rf], axis=1)
+y_rf = df_rf['churn']
+
+# 5. SPLIT DATA
+X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(X_rf, y_rf, test_size=0.2, random_state=42)
+
+# 6. INITIALIZE AND TRAIN RANDOM FOREST
+print("Training Random Forest...")
+model_rf = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42,
+    class_weight='balanced'
+)
+model_rf.fit(X_train_rf, y_train_rf)
+
+# 7. PREDICTIONS & METRICS
+y_pred_rf = model_rf.predict(X_test_rf)
+y_prob_rf = model_rf.predict_proba(X_test_rf)[:, 1]
+
+accuracy_rf = accuracy_score(y_test_rf, y_pred_rf)
+f1_rf = f1_score(y_test_rf, y_pred_rf)
+roc_auc_rf = roc_auc_score(y_test_rf, y_prob_rf)
+rmse_rf = np.sqrt(mean_squared_error(y_test_rf, y_prob_rf))
+
+print(f"Random Forest Metrics:\nAccuracy: {accuracy_rf:.4f}\nF1: {f1_rf:.4f}\nROC-AUC: {roc_auc_rf:.4f}\nRMSE: {rmse_rf:.4f}")
+
+# 8. FEATURE IMPORTANCE
+importances_rf = model_rf.feature_importances_
+feature_importance_rf = pd.DataFrame(
+    data=importances_rf, 
+    index=X_rf.columns, 
+    columns=["score"]
+).sort_values(by="score", ascending=False)
+
+top_features_rf = feature_importance_rf.head(10).to_string()
+
+# 9. GEMINI AI ANALYSIS (Random Forest Specific)
+def get_rf_gemini_analysis(api_key, accuracy, f1, roc, top_feats):
+    if not api_key:
+        print("\n[!] Gemini API Key missing.")
+        return
+
+    try:
+        genai.configure(api_key=api_key)
+        # Using the same model version as the rest of the file
+        llm_model = genai.GenerativeModel('gemini-2.5-flash') 
+
+        prompt = f"""
+        You are a Senior Data Scientist. I have trained a Random Forest model to predict customer churn. 
+        Here are the model performance metrics and the top contributing features.
+
+        **Model Metrics:**
+        - Accuracy: {accuracy:.4f}
+        - F1-Score: {f1:.4f}
+        - ROC-AUC Score: {roc:.4f}
+
+        **Top Features Driving Decisions:**
+        {top_feats}
+
+        **Task:**
+        1. Summarize the Random Forest model's performance.
+        2. Compare the feature importance: Do the embedding features (text sentiment) matter more than structured data?
+        3. Provide actionable business insights.
+        """
+        
+        print("\n" + "="*50)
+        print("GEMINI INSIGHTS REPORT (RANDOM FOREST)")
+        print("="*50)
+        
+        response = llm_model.generate_content(prompt)
+        print(response.text)
+        
+    except Exception as e:
+        print(f"Error calling Gemini for RF: {e}")
+
+# Run the analysis using the global API key defined at the top of the file
+get_rf_gemini_analysis(GOOGLE_API_KEY, accuracy_rf, f1_rf, roc_auc_rf, top_features_rf)
