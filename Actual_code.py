@@ -17,17 +17,21 @@ from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 import google.generativeai as genai
 import os
 
-# Load .env.local
 
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-
 df = pd.read_csv("clean_customer_churn_dataset.csv")
 
 # Load model once (fast)
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+def gemini_reply(prompt):
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    response = model.generate_content(prompt)
+    return response.text
 
 def get_embedding(text: str) -> np.ndarray:
     """
@@ -40,6 +44,10 @@ def get_embedding(text: str) -> np.ndarray:
 df["customer_feedback(vector)"] = df["customer_feedback"].apply(get_embedding)
 
 #--------------------------------Neural Network ----------------------------------
+
+print("======================================================================")
+print("                          Neural Network                              ")
+print("======================================================================")
 
 # Create a copy of df for neural network training
 df_nn = df.copy()
@@ -136,8 +144,21 @@ Questions:
 3) Insights: Given this model combines numerical features and `embed_` text-derived features, what business advantages does this more complex modeling approach provide?
 """
 
+try:
+    insights_nn = gemini_reply(analysis_prompt_nn)
+    print("\n" + "="*50)
+    print("=== NEURAL NETWORK AI INSIGHTS ===")
+    print("="*50)
+    print(insights_nn)
+except Exception as e:
+    print(f"Error calling Gemini for NN: {e}")
+
 
 #--------------------------------XGBoost ----------------------------------
+
+print("======================================================================")
+print("                          XGBoost                                     ")
+print("======================================================================")
 
 df['subscription_type'] = df['subscription_type'].map({
     'Basic': 1,
@@ -152,14 +173,6 @@ df['gender'] = df['gender'].map({
     'F':0,
 })
 
-
-load_dotenv() 
-
-def gemini_reply(prompt):
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content(prompt)
-    return response.text
 
 embedding_df = pd.DataFrame(df['customer_feedback(vector)'].tolist(), index=df.index)
 embedding_df.columns = [f'embed_{i}' for i in range(embedding_df.shape[1])]
@@ -236,16 +249,12 @@ except Exception as e:
     print(f"Error calling Gemini: {e}")
 
 
-try:
-    insights_nn = gemini_reply(analysis_prompt_nn)
-    print("\n" + "="*50)
-    print("=== NEURAL NETWORK AI INSIGHTS ===")
-    print("="*50)
-    print(insights_nn)
-except Exception as e:
-    print(f"Error calling Gemini for NN: {e}")
 
 #-------------------------Logistic Regression--------------------------------
+
+print("======================================================================")
+print("                          Logistic Regression                         ")
+print("======================================================================")
 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
@@ -383,6 +392,12 @@ response = llm.generate_content(prompt)
 print(response.text)
 
 #-------------------------Decision Tree Model-------------------------------------
+
+print("======================================================================")
+print("                          Decision Tree                               ")
+print("======================================================================")
+
+
 print("\n" + "="*50)
 print("Start of the decision tree model code")
 print("\n" + "="*50)
@@ -492,6 +507,10 @@ def get_gemini_analysis(api_key, accuracy, roc, top_feats):
 get_gemini_analysis(GOOGLE_API_KEY, acc, roc_auc, top_features_str)
 
 #--------------------------------Random Forest ----------------------------------
+
+print("======================================================================")
+print("                          Random Forest                               ")
+print("======================================================================")
 
 
 # 1. IMPORT NECESSARY LIBRARIES FOR THIS SECTION
