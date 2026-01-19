@@ -13,6 +13,8 @@
 
 **WIE 3007 – Data Mining and Warehousing (Universiti Malaya)**
 
+colab link : https://colab.research.google.com/drive/1rEWnthKxZfBzUNoJ8T7U_M-lvr4SLdFq?usp=sharing#scrollTo=cOGI7TucRG5Q
+
 This project implements an end-to-end data mining pipeline to predict customer churn in a subscription-based digital service. Beyond traditional machine learning approaches, the project integrates **Generative AI** for dataset simulation and **Large Language Models (LLMs)** for feature engineering and automated business insight generation.
 
 Both **structured data** (demographics, usage metrics) and **unstructured data** (customer feedback text) were combined to achieve high predictive performance.
